@@ -19,7 +19,22 @@ class NewForward:
     def new_forward(self, *args, **kwargs):
         def func(*args):
             return self.layer.old_forward_for_cp(*args, **kwargs)
-        output = checkpoint(func, *args)
+        
+        need_grad = False
+        for item in args:
+            if isinstance(item, torch.Tensor):
+                if item.requires_grad:
+                    need_grad = True
+                    break
+        for _, item in kwargs.items():
+            if isinstance(item, torch.Tensor):
+                if item.requires_grad:
+                    need_grad = True
+                    break
+        if need_grad:
+            output = checkpoint(func, *args)
+        else:
+            output = func(*args)
         return output
 
 
